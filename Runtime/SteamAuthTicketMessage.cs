@@ -1,0 +1,32 @@
+// Matches Steamworks.NET's own platform check, so this compiles out wherever Steamworks.NET does, and not only when it is missing.
+#if NUCLEUS_STEAMWORKS && !DISABLESTEAMWORKS && (UNITY_STANDALONE_WIN || UNITY_STANDALONE_LINUX || UNITY_STANDALONE_OSX || UNITY_ANDROID || STEAMWORKS_WIN || STEAMWORKS_LIN_OSX)
+#define NUCLEUS_STEAMWORKS_ENABLED
+#endif
+#if NUCLEUS_STEAMWORKS_ENABLED
+using System;
+using Nucleus.Managers.Messages;
+using Nucleus.Serializers;
+
+namespace Nucleus.Integrations.SteamworksNet
+{
+    /// <summary>
+    /// The Steam auth session ticket a client sends the server so <see cref="SteamTicketAuthenticator"/> can check it with Steam.
+    /// </summary>
+    [NetworkType]
+    public struct SteamAuthTicketMessage : IMessage
+    {
+        /// <inheritdoc/>
+        /// <remarks>False, since the client sending it is by definition not authenticated yet.</remarks>
+        public bool IsAuthenticationRequired => false;
+
+        /// <summary>
+        /// The ticket as <c>SteamUser.GetAuthSessionTicket</c> wrote it.
+        /// </summary>
+        /// <remarks>
+        /// The client points it into its ticket buffer. The server reads it into an array rented from <c>TrackedArrayPool</c>, which its
+        /// handler returns.
+        /// </remarks>
+        public ArraySegment<byte> Ticket;
+    }
+}
+#endif

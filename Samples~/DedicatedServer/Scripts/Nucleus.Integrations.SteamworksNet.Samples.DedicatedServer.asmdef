@@ -1,0 +1,31 @@
+{
+    "name": "Nucleus.Integrations.SteamworksNet.Samples.DedicatedServer",
+    "rootNamespace": "Nucleus.Integrations.SteamworksNet.Samples.DedicatedServer",
+    "references": [
+        "Nucleus.Integrations.SteamworksNet",
+        "Nucleus.Integrations.SteamworksNet.Samples",
+        "Nucleus.Integrations.Unity",
+        "com.rlabrecque.steamworks.net"
+    ],
+    "includePlatforms": [
+        "Editor",
+        "LinuxStandalone64",
+        "macOSStandalone",
+        "WindowsStandalone32",
+        "WindowsStandalone64"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [
+        {
+            "name": "com.rlabrecque.steamworks.net",
+            "expression": "",
+            "define": "NUCLEUS_STEAMWORKS"
+        }
+    ],
+    "noEngineReferences": false
+}

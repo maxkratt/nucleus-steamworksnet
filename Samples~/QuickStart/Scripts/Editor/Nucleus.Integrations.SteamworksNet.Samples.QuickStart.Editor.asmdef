@@ -1,0 +1,26 @@
+{
+    "name": "Nucleus.Integrations.SteamworksNet.Samples.QuickStart.Editor",
+    "rootNamespace": "Nucleus.Integrations.SteamworksNet.Samples.QuickStart.Editor",
+    "references": [
+        "Nucleus.Integrations.SteamworksNet.Samples.QuickStart",
+        "Nucleus.Integrations.Unity.Editor",
+        "com.rlabrecque.steamworks.net"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [
+        {
+            "name": "com.rlabrecque.steamworks.net",
+            "expression": "",
+            "define": "NUCLEUS_STEAMWORKS"
+        }
+    ],
+    "noEngineReferences": false
+}

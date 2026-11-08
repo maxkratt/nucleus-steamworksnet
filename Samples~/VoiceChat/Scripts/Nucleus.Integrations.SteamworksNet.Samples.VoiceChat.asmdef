@@ -1,0 +1,32 @@
+{
+    "name": "Nucleus.Integrations.SteamworksNet.Samples.VoiceChat",
+    "rootNamespace": "Nucleus.Integrations.SteamworksNet.Samples.VoiceChat",
+    "references": [
+        "Nucleus.Integrations.SteamworksNet",
+        "Nucleus.Integrations.SteamworksNet.Samples",
+        "Nucleus.Integrations.Unity",
+        "Unity.InputSystem",
+        "com.rlabrecque.steamworks.net"
+    ],
+    "includePlatforms": [
+        "Editor",
+        "LinuxStandalone64",
+        "macOSStandalone",
+        "WindowsStandalone32",
+        "WindowsStandalone64"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [
+        {
+            "name": "com.rlabrecque.steamworks.net",
+            "expression": "",
+            "define": "NUCLEUS_STEAMWORKS"
+        }
+    ],
+    "noEngineReferences": false
+}

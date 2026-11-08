@@ -1,0 +1,27 @@
+{
+    "name": "Nucleus.Integrations.SteamworksNet.Editor",
+    "rootNamespace": "Nucleus.Integrations.SteamworksNet.Editor",
+    "references": [
+        "Nucleus.Integrations.SteamworksNet",
+        "Nucleus.Integrations.Unity",
+        "Nucleus.Integrations.Unity.Editor",
+        "com.rlabrecque.steamworks.net"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [
+        {
+            "name": "com.rlabrecque.steamworks.net",
+            "expression": "",
+            "define": "NUCLEUS_STEAMWORKS"
+        }
+    ],
+    "noEngineReferences": false
+}
