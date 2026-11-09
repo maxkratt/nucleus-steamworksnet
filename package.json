@@ -1,7 +1,7 @@
 {
   "name": "com.maxkratt.nucleus.steamworksnet",
   "displayName": "Nucleus Steamworks.NET",
-  "version": "0.46.0",
+  "version": "0.47.0",
   "unity": "6000.5",
   "description": "Steam Networking Sockets transport for the Nucleus netcode engine, built on Steamworks.NET. Requires Nucleus 0.5.0 or later in Assets/Nucleus and Steamworks.NET (com.rlabrecque.steamworks.net) added by git URL.",
   "license": "MIT",
@@ -50,6 +50,16 @@
       "displayName": "Voice Chat",
       "description": "Push to talk Steam voice relayed through the server.",
       "path": "Samples~/VoiceChat"
+    },
+    {
+      "displayName": "Ban List",
+      "description": "Kick, ban and blacklist players by SteamID, and tell a refused client why.",
+      "path": "Samples~/BanList"
+    },
+    {
+      "displayName": "Quick Match",
+      "description": "One button matchmaking through invisible Steam lobbies, then a members only session.",
+      "path": "Samples~/QuickMatch"
     }
   ]
 }

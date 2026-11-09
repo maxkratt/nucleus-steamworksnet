@@ -82,6 +82,7 @@ Collapsed by default, with a summary of its values.
 These live on `SteamSockets`, which `AddToAsync` returns and `TransportManager` holds:
 
 - `ConnectingClientFilter`, a `bool (ulong steamId)` called on the network loop thread before the engine sees a client. Return `false` to refuse it, for a ban list or lobby members only.
+- `SteamworksNetTransport.ClientAdmissionFilter`, a `bool (Connection connection, ulong steamId)` used while Ticket Authentication is on and run before the ticket is waited for. Unlike `ConnectingClientFilter` it can tell the client why, with `ServerManager.DenyClient(connection, notice)`. It sees the player's SteamID, not the game's owner under Family Sharing.
 - `ServerFakeAddress`, the address Steam grants a Fake IP server once it is ready.
 - `TryGetLinkStatus(connection, out SteamLinkStatus)`, Steam's ping, connection quality and pending bytes for one link.
 - `SendRateMinimumBytesPerSecond`, the send rate floor. It stays at Steam's 256 KiB/s; raising it made no difference in testing.
@@ -127,6 +128,8 @@ Import them from the package's **Samples** tab in the Package Manager. Import **
 | [Lobby Browser](Samples~/LobbyBrowser/README.md) | Search public lobbies by distance and estimated ping. |
 | [Dedicated Server](Samples~/DedicatedServer/README.md) | A Steam game server with a LAN and internet server browser. |
 | [Voice Chat](Samples~/VoiceChat/README.md) | Push to talk Steam voice relayed through the server. Needs the Input System package. |
+| [Ban List](Samples~/BanList/README.md) | Kick, ban and blacklist players by SteamID, and tell a refused client why. |
+| [Quick Match](Samples~/QuickMatch/README.md) | One button matchmaking through invisible Steam lobbies, then a members only session. Its two scenes must be added to the Build Profile; its inspector offers to. |
 
 The Quick Start and Voice Chat samples spawn networked prefabs: after importing them, open **Tools > Nucleus** and press **Rebuild** beside Rebuild Network Prefab Collection on its Build tab.
 

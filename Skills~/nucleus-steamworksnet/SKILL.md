@@ -32,12 +32,12 @@ Confirm any API against the source in the package (`Packages/com.maxkratt.nucleu
 
 Nucleus ships no lobby code; the lobby only tells a joiner which SteamID to dial.
 
-1. The host calls `StartHostAsync()`, then `SteamMatchmaking.CreateLobby(...)`, so nobody enters a lobby whose server is not listening yet.
+1. The host calls `StartHostAsync()`, then `SteamMatchmaking.CreateLobby(...)`, and in `LobbyCreated_t` calls `SteamMatchmaking.SetLobbyGameServer(lobby, 0, 0, ownSteamId)`, so nobody dials a server that is not listening yet.
 2. A joiner enters the lobby: from an invite or the friends list while the game runs (`GameLobbyJoinRequested_t`, then `SteamMatchmaking.JoinLobby`), or from `+connect_lobby <id>` when Steam launched the game to accept an invite (read it from `Environment.GetCommandLineArgs()`; it is Steam's flag, not a Nucleus one).
-3. In its `LobbyEnter_t` callback the joiner reads `SteamMatchmaking.GetLobbyOwner(lobby)`, skips it when that is its own SteamID (the creator gets the callback too), sets `ServerSteamId` to it and calls `StartClientAsync()`.
+3. In its `LobbyEnter_t` callback the joiner skips the rest when `GetLobbyOwner(lobby)` is its own SteamID (the creator gets the callback too), then reads `GetLobbyGameServer(lobby, ...)`. If none is set it waits for `LobbyGameCreated_t`. If the game server differs from the owner, the host has left. Otherwise it sets `ServerSteamId` to the game server and calls `StartClientAsync()`.
 4. On leaving, call `SteamMatchmaking.LeaveLobby` and `ShutdownAll()`.
 
-The Lobbies sample (`LobbiesPanel`, `Scenes/SteamLobbies.unity`) shows the whole flow, including the invite overlay and joining by typed lobby ID.
+The Lobbies sample (`LobbiesPanel`, `Scenes/SteamLobbies.unity`) shows the whole flow, including the invite overlay and joining by typed lobby ID. The Quick Match sample (`QuickMatchPanel`, `QuickMatchGame`) shows matchmaking through invisible lobbies, with a session open only to the lobby's members.
 
 ## Identity and admission
 
@@ -45,6 +45,7 @@ The Lobbies sample (`LobbiesPanel`, `Scenes/SteamLobbies.unity`) shows the whole
 - A server knows every client's SteamID and a client knows its own. For a client to know the others (names, avatars, friend checks), tick Share Steam IDs on the server (`SteamSockets.ShareSteamIdsEnabled`, off by default, since a SteamID links to a public profile). The IDs arrive after the client joins, in any order against the engine's other events, so read `TryGetSteamId` where needed and subscribe to `SteamIdChanged` (`uint connectionId, ulong steamId`, `UnsetSteamId` when the client left). Never let a client report its own SteamID; it could claim someone else's.
 - To also have Steam confirm the player owns the game and is not banned, tick Ticket Authentication (under Shared) on server and clients (`SteamTicketAuthenticator`). A ticket is bound to the link's SteamID, so a borrowed or forged one is refused. If only the server has it on, a client sends no ticket and is dropped after `ServerManager.AuthenticationTimeoutSeconds` (30 s by default) with a generic authentication line; if only the client has it on, it joins unchecked.
 - To refuse by SteamID before the engine sees the client (ban list, lobby members only), set `SteamSockets.ConnectingClientFilter`, a `bool (ulong steamId)` called on the network loop thread.
+- To refuse by SteamID and tell the client why, with Ticket Authentication on, set `SteamworksNetTransport.ClientAdmissionFilter`, a `bool (Connection connection, ulong steamId)` that runs before the ticket is waited for. Refuse with `ServerManager.DenyClient(connection, notice)` and return `false`; the notice's `IsAuthenticationRequired` must be `false`, because the client is not authenticated yet. The Ban List sample shows this.
 - Maximum Connections (at least 1 in the inspector, with no upper limit) refuses at accept once the server is full. A host's own client takes one place, as on Synapse.
 
 ## Behaviour worth knowing

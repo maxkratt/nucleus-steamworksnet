@@ -28,14 +28,26 @@ namespace Nucleus.Integrations.SteamworksNet
     /// barred from. A dedicated server on the game server interface wants this; a listen server may.
     /// </para>
     /// <para>
-    /// Both sides run it. The client sends its ticket as soon as its link is up; the server begins an auth session bound to the link's
-    /// SteamID, so a forged ticket, or someone else's, is refused, and approves the client with that SteamID as its identity once Steam
-    /// answers. The host's own client, paired in process, is approved at once. Steam's answers arrive on the thread pumping its
-    /// callbacks and are applied at <see cref="NetworkLoopSteps.LateVariableUpdate"/>.
+    /// Both sides run it. The client asks Steam for a ticket as soon as its link is up and sends it once Steam reports it ready; the
+    /// server begins an auth session bound to the link's SteamID, so a forged ticket, or someone else's, is refused, and approves the
+    /// client with that SteamID as its identity once Steam answers. The host's own client, paired in process, is approved at once.
+    /// Steam's answers arrive on the thread pumping its callbacks and are applied at <see cref="NetworkLoopSteps.LateVariableUpdate"/>.
     /// </para>
     /// </remarks>
     public class SteamTicketAuthenticator : Managers.Server.IClientAuthenticator, INetworkLoopStepCallback
     {
+        /// <summary>
+        /// Decides whether a connecting client may continue to the ticket check.
+        /// </summary>
+        /// <param name="connection">The client, which may be refused with a reason through <c>ServerManager.DenyClient(connection, notice)</c>.</param>
+        /// <param name="steamId">The SteamID its link was authenticated as. This is the player, not the game's owner under Family Sharing.</param>
+        /// <returns><see langword="true"/> to continue, or <see langword="false"/> to refuse the client.</returns>
+        public delegate bool ClientAdmissionFilterHandler(Connection connection, ulong steamId);
+        /// <summary>
+        /// Consulted on the network loop thread for each connecting client before it waits for a ticket, so a refused client costs no
+        /// auth session, or <see langword="null"/> to admit every client to the ticket check. The host's own client skips it.
+        /// </summary>
+        public ClientAdmissionFilterHandler ClientAdmissionFilter;
         /// <summary>
         /// The engine this authenticator is registered with, or <see langword="null"/> while it is not.
         /// </summary>
@@ -52,6 +64,10 @@ namespace Nucleus.Integrations.SteamworksNet
         /// The registration for ticket verdicts on the game server interface.
         /// </summary>
         private Callback<ValidateAuthTicketResponse_t> _gameServerTicketResponseCallback;
+        /// <summary>
+        /// The registration for Steam reporting this peer's own ticket ready to send.
+        /// </summary>
+        private Callback<GetAuthSessionTicketResponse_t> _ownTicketReadyCallback;
         /// <summary>
         /// The interface the open auth sessions were begun on.
         /// </summary>
@@ -73,13 +89,21 @@ namespace Nucleus.Integrations.SteamworksNet
         /// </summary>
         private readonly ConcurrentQueue<ValidateAuthTicketResponse_t> _ticketResponses = new();
         /// <summary>
+        /// Steam's reports that this peer's own ticket is ready, raised on its callback thread and applied on the loop thread.
+        /// </summary>
+        private readonly ConcurrentQueue<GetAuthSessionTicketResponse_t> _ownTicketReadyResponses = new();
+        /// <summary>
         /// The buffer this peer's own ticket is written into.
         /// </summary>
         private readonly byte[] _ticketBuffer = new byte[MaximumTicketBytes];
         /// <summary>
-        /// The ticket this peer's client last sent, or <see cref="HAuthTicket.Invalid"/> while it has none outstanding.
+        /// The ticket this peer's client last requested, or <see cref="HAuthTicket.Invalid"/> while it has none outstanding.
         /// </summary>
         private HAuthTicket _ownTicket = HAuthTicket.Invalid;
+        /// <summary>
+        /// How many bytes of <see cref="_ticketBuffer"/> hold <see cref="_ownTicket"/>.
+        /// </summary>
+        private int _ownTicketByteCount;
         /// <summary>
         /// The most bytes a Steam auth session ticket takes; Valve's samples size the buffer at 1024.
         /// </summary>
@@ -105,6 +129,7 @@ namespace Nucleus.Integrations.SteamworksNet
             // Registering touches no native code, so it works before the game has initialized Steam.
             _clientTicketResponseCallback = SteamNetworkingInterface.Client.CreateValidateAuthTicketCallback(OnTicketResponse);
             _gameServerTicketResponseCallback = SteamNetworkingInterface.GameServer.CreateValidateAuthTicketCallback(OnTicketResponse);
+            _ownTicketReadyCallback = Callback<GetAuthSessionTicketResponse_t>.Create(OnOwnTicketReady);
         }
 
         /// <inheritdoc/>
@@ -120,6 +145,14 @@ namespace Nucleus.Integrations.SteamworksNet
             if (!ulong.TryParse(connection.RemoteAddress, out ulong steamId) || steamId == SteamSockets.UnsetSteamId)
             {
                 Logger<SteamTicketAuthenticator>.LogWarning($"A client with no SteamID [{connection.RemoteAddress}] was refused.");
+                _coreManager.ServerManager.DenyClient(connection);
+
+                return;
+            }
+
+            if (ClientAdmissionFilter is not null && !ClientAdmissionFilter(connection, steamId))
+            {
+                // A filter that already refused the client with a notice leaves nothing for this call to do.
                 _coreManager.ServerManager.DenyClient(connection);
 
                 return;
@@ -153,6 +186,7 @@ namespace Nucleus.Integrations.SteamworksNet
 
             _clientTicketResponseCallback.Dispose();
             _gameServerTicketResponseCallback.Dispose();
+            _ownTicketReadyCallback.Dispose();
 
             _coreManager = null;
             _steamSockets = null;
@@ -162,7 +196,7 @@ namespace Nucleus.Integrations.SteamworksNet
         NetworkLoopSteps INetworkLoopStepCallback.GetNetworkLoopSteps() => NetworkLoopSteps.LateVariableUpdate;
 
         /// <summary>
-        /// Applies Steam's queued verdicts.
+        /// Applies Steam's queued verdicts and sends this peer's own ticket once it is ready.
         /// </summary>
         /// <param name="networkLoopStep">The step being performed.</param>
         /// <param name="stepDelta">Delta information about the step.</param>
@@ -170,6 +204,9 @@ namespace Nucleus.Integrations.SteamworksNet
         {
             while (_ticketResponses.TryDequeue(out ValidateAuthTicketResponse_t ticketResponse))
                 ApplyTicketResponse(ticketResponse);
+
+            while (_ownTicketReadyResponses.TryDequeue(out GetAuthSessionTicketResponse_t ownTicketReadyResponse))
+                ApplyOwnTicketReady(ownTicketReadyResponse);
         }
 
         /// <summary>
@@ -266,7 +303,7 @@ namespace Nucleus.Integrations.SteamworksNet
         }
 
         /// <summary>
-        /// Sends this peer's ticket when its client links up to another peer's server, and cancels it when the link drops.
+        /// Requests this peer's ticket when its client links up to another peer's server, and cancels it when the link drops.
         /// </summary>
         /// <param name="connectionStateChange">The state change that was raised.</param>
         private void OnConnectionLocalStateChanged(ConnectionStateChange connectionStateChange)
@@ -279,7 +316,7 @@ namespace Nucleus.Integrations.SteamworksNet
             if (localConnectionState is LocalConnectionState.Disconnected)
                 CancelOwnTicket();
             else if (localConnectionState is LocalConnectionState.Connected && !_coreManager.TransportManager.IsServerStarted)
-                SendOwnTicket();
+                RequestOwnTicket();
         }
 
         /// <summary>
@@ -293,14 +330,11 @@ namespace Nucleus.Integrations.SteamworksNet
         }
 
         /// <summary>
-        /// Writes this peer's ticket, bound to the server it is linked to, and sends it.
+        /// Writes this peer's ticket, bound to the server it is linked to; <see cref="ApplyOwnTicketReady"/> sends it once Steam reports it ready.
         /// </summary>
-        private void SendOwnTicket()
+        private void RequestOwnTicket()
         {
             CancelOwnTicket();
-
-            if (!_coreManager.TransportManager.TryGetServerConnection(out Connection serverConnection))
-                return;
 
             /* The ticket is bound to the server's identity, so a server that is handed it cannot replay it to another. Without a Steam
              * link to read it from, the identity stays invalid and the ticket is unbound. */
@@ -315,7 +349,28 @@ namespace Nucleus.Integrations.SteamworksNet
                 return;
             }
 
-            serverConnection.SendMessage(Channel.Reliable, new SteamAuthTicketMessage { Ticket = new(_ticketBuffer, 0, (int)ticketSize) });
+            _ownTicketByteCount = (int)ticketSize;
+        }
+
+        /// <summary>
+        /// Sends this peer's ticket to the server once Steam reports it ready, or logs why Steam could not ready it.
+        /// </summary>
+        /// <param name="ownTicketReadyResponse">Steam's report.</param>
+        private void ApplyOwnTicketReady(GetAuthSessionTicketResponse_t ownTicketReadyResponse)
+        {
+            // A report for a ticket already cancelled, or replaced by a newer connect, has nothing left to send.
+            if (ownTicketReadyResponse.m_hAuthTicket != _ownTicket || _ownTicket == HAuthTicket.Invalid)
+                return;
+
+            if (ownTicketReadyResponse.m_eResult is not EResult.k_EResultOK)
+            {
+                Logger<SteamTicketAuthenticator>.LogError($"Steam could not ready an auth session ticket: [{ownTicketReadyResponse.m_eResult}], so the server will refuse this client.");
+
+                return;
+            }
+
+            if (_coreManager.TransportManager.TryGetServerConnection(out Connection serverConnection))
+                serverConnection.SendMessage(Channel.Reliable, new SteamAuthTicketMessage { Ticket = new(_ticketBuffer, 0, _ownTicketByteCount) });
         }
 
         /// <summary>
@@ -364,6 +419,12 @@ namespace Nucleus.Integrations.SteamworksNet
         /// </summary>
         /// <param name="ticketResponse">Steam's verdict.</param>
         private void OnTicketResponse(ValidateAuthTicketResponse_t ticketResponse) => _ticketResponses.Enqueue(ticketResponse);
+
+        /// <summary>
+        /// Queues Steam's report that this peer's own ticket is ready. Runs on the thread pumping Steam's callbacks.
+        /// </summary>
+        /// <param name="ownTicketReadyResponse">Steam's report.</param>
+        private void OnOwnTicketReady(GetAuthSessionTicketResponse_t ownTicketReadyResponse) => _ownTicketReadyResponses.Enqueue(ownTicketReadyResponse);
     }
 }
 #endif

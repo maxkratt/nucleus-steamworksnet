@@ -1,5 +1,11 @@
 # Changelog
 
+## Nucleus Steamworks.NET 0.47.0
+- `SteamworksNetTransport.ClientAdmissionFilter` refuses a SteamID before its ticket is checked, and can tell the client why.
+- With Ticket Authentication on, a client now sends its ticket only once Steam reports it ready.
+- The Lobbies and Lobby Browser samples name the host with `SetLobbyGameServer` and connect to the game server rather than the lobby owner, so a late joiner of a lobby whose host left is told so at once.
+- New samples: Ban List and Quick Match.
+
 ## Nucleus Steamworks.NET 0.46.0
 First public release. Earlier versions, 0.1.0 to 0.45.0, were developed privately and not published. Requires Nucleus 0.5.0 or later, Steamworks.NET and Unity 6.5 or later.
 - Steam Networking Sockets transport for Nucleus, addressing by Steam ID, IP address or Fake IP, on the user or game server interface.

@@ -31,8 +31,10 @@ namespace Nucleus.Integrations.SteamworksNet.Tests
     /// <remarks>
     /// Skipped unless the Steam client is running, since there is no mock of Steam. Every peer runs in this process on one account, so
     /// the remote client dials the server by <see cref="SteamworksNetAddressing.IpAddress"/> on the loopback: a client targeting its own SteamID
-    /// would be read as joining its own server. Steam is initialized when nothing else has, shut down again by the case that did, and
-    /// its callbacks are pumped by every wait, since no bootstrap runs here.
+    /// would be read as joining its own server. Steam is initialized when nothing else has, shut down again once the whole fixture has
+    /// run, and its callbacks are pumped by every wait, since no bootstrap runs here. Steam is not restarted between cases because
+    /// <see cref="SteamAPI.Shutdown"/> can deadlock inside steamclient against its service thread while that thread finishes loading the
+    /// relay config, which froze the editor during a full run.
     /// </remarks>
     public class SteamworksNetPlayTests
     {
@@ -74,9 +76,9 @@ namespace Nucleus.Integrations.SteamworksNet.Tests
         /// </summary>
         private readonly List<GameObject> _createdObjects = new();
         /// <summary>
-        /// True when this case initialized Steam, and so shuts it down at teardown.
+        /// True when this fixture initialized Steam, and so shuts it down after its last case.
         /// </summary>
-        private bool _isSteamInitializedByTest;
+        private bool _isSteamInitializedByFixture;
         /// <summary>
         /// The reason the kicked client received, or <see langword="null"/> before one arrives.
         /// </summary>
@@ -95,10 +97,10 @@ namespace Nucleus.Integrations.SteamworksNet.Tests
         private int _receivedTickCount;
 
         /// <summary>
-        /// Skips the case unless Steam is running, and initializes Steam unless something already has.
+        /// Skips the fixture unless Steam is running, and initializes Steam unless something already has.
         /// </summary>
-        [SetUp]
-        public void SetUp()
+        [OneTimeSetUp]
+        public void OneTimeSetUp()
         {
             if (!SteamAPI.IsSteamRunning())
                 Assert.Ignore("The Steam client is not running.");
@@ -109,11 +111,23 @@ namespace Nucleus.Integrations.SteamworksNet.Tests
             if (!SteamAPI.Init())
                 Assert.Ignore("Steam is running but would not initialize; steam_appid.txt must be in the project folder.");
 
-            _isSteamInitializedByTest = true;
+            _isSteamInitializedByFixture = true;
         }
 
         /// <summary>
-        /// Destroys every object the case created, which shuts their peers down, then shuts Steam down if the case started it.
+        /// Shuts Steam down if this fixture started it.
+        /// </summary>
+        [OneTimeTearDown]
+        public void OneTimeTearDown()
+        {
+            if (_isSteamInitializedByFixture)
+                SteamAPI.Shutdown();
+
+            _isSteamInitializedByFixture = false;
+        }
+
+        /// <summary>
+        /// Destroys every object the case created, which shuts their peers down, and pumps Steam's callbacks once they have closed.
         /// </summary>
         /// <returns>The coroutine driving the teardown.</returns>
         [UnityTearDown]
@@ -134,11 +148,6 @@ namespace Nucleus.Integrations.SteamworksNet.Tests
             // Lets the destroyed peers close their links while Steam can still send the close.
             yield return null;
             SteamAPI.RunCallbacks();
-
-            if (_isSteamInitializedByTest)
-                SteamAPI.Shutdown();
-
-            _isSteamInitializedByTest = false;
         }
 
         /// <summary>
@@ -323,6 +332,59 @@ namespace Nucleus.Integrations.SteamworksNet.Tests
         }
 
         /// <summary>
+        /// A client the admission filter refuses receives the refusal's reason before its link drops, and is never authenticated.
+        /// </summary>
+        /// <returns>The coroutine driving the case.</returns>
+        [UnityTest]
+        [Timeout(60000)]
+        public IEnumerator RemoteClient_RefusedByAdmissionFilter_ReceivesTheReasonBeforeTheDrop()
+        {
+            ushort port = ProbeFreeUdpPort();
+            UnityCoreManager serverCoreManager = NewPeer("SteamServer", out UnityTransportManager serverTransportManager, out SteamworksNetTransport serverSteamworksNetTransport);
+            serverSteamworksNetTransport.BindAddress = "localhost";
+            UnityCoreManager clientCoreManager = NewPeer("SteamClient", out UnityTransportManager clientTransportManager, out SteamworksNetTransport clientSteamworksNetTransport);
+            clientSteamworksNetTransport.ServerAddress = $"127.0.0.1:{port}";
+
+            yield return WaitForTask(serverTransportManager.EnsureAddedAsync());
+
+            SteamSockets serverSteamSockets = (SteamSockets)serverTransportManager.Transports[0];
+            serverSteamSockets.Addressing = SteamworksNetAddressing.IpAddress;
+            serverSteamSockets.SetPort(port);
+
+            SteamTicketAuthenticator steamTicketAuthenticator = new();
+            steamTicketAuthenticator.Initialize(serverCoreManager.CoreManager, serverSteamSockets);
+            steamTicketAuthenticator.ClientAdmissionFilter = (connection, steamId) =>
+            {
+                serverCoreManager.CoreManager.ServerManager.DenyClient(connection, new SteamPlayTestDenyNotice { Reason = KickReason });
+
+                return false;
+            };
+
+            MessageManager clientMessageManager = clientCoreManager.CoreManager.MessageManager;
+            clientMessageManager.RegisterMessageHandler<SteamPlayTestDenyNotice>(OnDenyNoticeReceived);
+
+            try
+            {
+                yield return WaitForTask(serverTransportManager.StartServerAsync());
+                yield return WaitForTask(clientTransportManager.EnsureAddedAsync());
+
+                ((SteamSockets)clientTransportManager.Transports[0]).Addressing = SteamworksNetAddressing.IpAddress;
+
+                yield return WaitForTask(clientTransportManager.StartClientAsync());
+                yield return WaitUntil(() => _receivedKickReason is not null && !IsClientConnected(clientCoreManager));
+            }
+            finally
+            {
+                clientMessageManager.UnregisterMessageHandler<SteamPlayTestDenyNotice>(OnDenyNoticeReceived);
+                steamTicketAuthenticator.Deinitialize();
+            }
+
+            Assert.AreEqual(KickReason, _receivedKickReason, "The refusal's reason did not reach the client.");
+            Assert.IsFalse(IsClientConnected(clientCoreManager), "The refused client's link never dropped.");
+            Assert.IsFalse(IsClientAuthenticated(clientCoreManager), "The refused client was authenticated.");
+        }
+
+        /// <summary>
         /// A client that disconnects is released by the server, and joins again on the same transport.
         /// </summary>
         /// <returns>The coroutine driving the case.</returns>
@@ -471,6 +533,13 @@ namespace Nucleus.Integrations.SteamworksNet.Tests
         }
 
         private void OnKickNoticeReceived(in MessageContext messageContext, SteamPlayTestKickNotice steamPlayTestKickNotice) => _receivedKickReason = steamPlayTestKickNotice.Reason;
+
+        /// <summary>
+        /// Records the reason of a refusal the client received.
+        /// </summary>
+        /// <param name="messageContext">The context of the message.</param>
+        /// <param name="steamPlayTestDenyNotice">The notice.</param>
+        private void OnDenyNoticeReceived(in MessageContext messageContext, SteamPlayTestDenyNotice steamPlayTestDenyNotice) => _receivedKickReason = steamPlayTestDenyNotice.Reason;
 
         /// <summary>
         /// Records the length of the last payload the server received.
@@ -691,6 +760,21 @@ namespace Nucleus.Integrations.SteamworksNet.Tests
 
         /// <summary>
         /// The reason the server gave for the kick.
+        /// </summary>
+        public string Reason;
+    }
+
+    /// <summary>
+    /// The reason the play mode test's server gives a client it refuses, which arrives before that client is authenticated.
+    /// </summary>
+    [NetworkType]
+    public struct SteamPlayTestDenyNotice : IMessage
+    {
+        /// <inheritdoc/>
+        public bool IsAuthenticationRequired => false;
+
+        /// <summary>
+        /// The reason the server gave for the refusal.
         /// </summary>
         public string Reason;
     }

@@ -80,6 +80,23 @@ namespace Nucleus.Integrations.SteamworksNet
 #endif
             }
         }
+#if NUCLEUS_STEAMWORKS_ENABLED
+        /// <summary>
+        /// Consulted for each connecting client before it waits for a ticket, or <see langword="null"/> to admit every client to the ticket check.
+        /// </summary>
+        /// <remarks>Used only while Ticket Authentication is on. Accepted at any time and applied to the authenticator this component registers.</remarks>
+        public SteamTicketAuthenticator.ClientAdmissionFilterHandler ClientAdmissionFilter
+        {
+            get => _clientAdmissionFilter;
+            set
+            {
+                _clientAdmissionFilter = value;
+
+                if (_steamTicketAuthenticator is not null)
+                    _steamTicketAuthenticator.ClientAdmissionFilter = value;
+            }
+        }
+#endif
         /// <summary>
         /// The message logged, and thrown from a start, while Steamworks.NET is not installed.
         /// </summary>
@@ -244,6 +261,10 @@ namespace Nucleus.Integrations.SteamworksNet
         /// The authenticator this component registered, or <see langword="null"/> when ticket authentication is off.
         /// </summary>
         private SteamTicketAuthenticator _steamTicketAuthenticator;
+        /// <summary>
+        /// The filter given to the ticket authenticator, or <see langword="null"/> for none.
+        /// </summary>
+        private SteamTicketAuthenticator.ClientAdmissionFilterHandler _clientAdmissionFilter;
 #endif
 
 #if NUCLEUS_STEAMWORKS_ENABLED
@@ -269,7 +290,7 @@ namespace Nucleus.Integrations.SteamworksNet
 
             if (_ticketAuthenticationEnabled)
             {
-                _steamTicketAuthenticator = new();
+                _steamTicketAuthenticator = new() { ClientAdmissionFilter = _clientAdmissionFilter };
                 _steamTicketAuthenticator.Initialize(coreManager, _steamSockets);
             }
 
