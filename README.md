@@ -1,3 +1,5 @@
+![Nucleus Steamworks.NET: A Steam Networking Sockets transport for Nucleus](Documentation~/banner.svg)
+
 # Nucleus Steamworks.NET
 
 A Steam Networking Sockets transport for the Nucleus netcode engine, built on [Steamworks.NET](https://github.com/rlabrecque/Steamworks.NET). Players host and join each other by SteamID through Valve's relay, dedicated servers run as Steam game servers behind a fake IP, and two processes can also dial each other by IP address.

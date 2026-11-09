@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="280" viewBox="0 0 800 280" role="img" aria-label="Nucleus Steamworks.NET: A Steam Networking Sockets transport for Nucleus">
+  <defs><linearGradient id="link" gradientUnits="userSpaceOnUse" x1="96" x2="704" y1="0" y2="0"><stop stop-color="#19b8ef"/><stop offset=".5" stop-color="#7b5cff"/><stop offset="1" stop-color="#f0469b"/></linearGradient></defs>
+  <rect width="800" height="280" rx="12" fill="#f4f6f9"/>
+  <g font-family="Segoe UI, system-ui, Arial, sans-serif">
+    <text x="36" y="86" font-size="58" font-weight="700" fill="#12162a">Nucleus Steamworks.NET</text>
+    <text x="38" y="126" font-size="22" fill="#55607a">A Steam Networking Sockets transport for Nucleus</text>
+
+    <path d="M96 200H704" stroke="#c3ccdb" stroke-width="2" stroke-dasharray="3 7"/>
+    <path d="M96 200H704" stroke="url(#link)" stroke-width="3" stroke-dasharray="608" stroke-dashoffset="608"><animate attributeName="stroke-dashoffset" values="608;608;0;0;608" keyTimes="0;.06;.3;.95;1" dur="9s" repeatCount="indefinite"/></path>
+
+    <circle r="7" fill="#7b5cff" opacity="0"><animateMotion dur="9s" repeatCount="indefinite" calcMode="linear" keyPoints="0;0;1;1" keyTimes="0;.06;.3;1" path="M96 200H704"/><animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;.05;.06;.3;.31;1" dur="9s" repeatCount="indefinite"/></circle>
+    <circle r="7" fill="#7b5cff" opacity="0"><animateMotion dur="9s" repeatCount="indefinite" calcMode="linear" keyPoints="0;0;1;1" keyTimes="0;.32;.46;1" path="M704 200H96"/><animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;.31;.32;.46;.47;1" dur="9s" repeatCount="indefinite"/></circle>
+
+    <g opacity="0"><animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;.48;.5;.93;.95;1" dur="9s" repeatCount="indefinite"/>
+      <g fill="#7b5cff">
+        <circle r="5"><animateMotion dur="2s" repeatCount="indefinite" path="M96 200H704"/></circle>
+        <circle r="5"><animateMotion dur="2s" begin="-1s" repeatCount="indefinite" path="M96 200H704"/></circle>
+        <circle r="5"><animateMotion dur="2s" begin="-.5s" repeatCount="indefinite" path="M704 200H96"/></circle>
+        <circle r="5"><animateMotion dur="2s" begin="-1.5s" repeatCount="indefinite" path="M704 200H96"/></circle>
+      </g>
+    </g>
+
+    <rect x="36" y="176" width="120" height="48" rx="8" fill="#ffffff" stroke="#c3ccdb"><animate attributeName="fill" values="#ffffff;#ffffff;#7b5cff;#7b5cff;#ffffff" keyTimes="0;.46;.49;.95;1" dur="9s" repeatCount="indefinite"/></rect>
+    <rect x="340" y="176" width="120" height="48" rx="8" fill="#ffffff" stroke="#c3ccdb"><animate attributeName="fill" values="#ffffff;#ffffff;#7b5cff;#7b5cff;#ffffff" keyTimes="0;.18;.2;.95;1" dur="9s" repeatCount="indefinite"/></rect>
+    <rect x="644" y="176" width="120" height="48" rx="8" fill="#ffffff" stroke="#c3ccdb"><animate attributeName="fill" values="#ffffff;#ffffff;#7b5cff;#7b5cff;#ffffff" keyTimes="0;.3;.33;.95;1" dur="9s" repeatCount="indefinite"/></rect>
+    <g font-size="18" font-weight="600" text-anchor="middle" fill="#12162a">
+      <text x="96" y="206">Friend<animate attributeName="fill" values="#12162a;#12162a;#fff;#fff;#12162a" keyTimes="0;.46;.49;.95;1" dur="9s" repeatCount="indefinite"/></text>
+      <text x="400" y="206">Valve relay<animate attributeName="fill" values="#12162a;#12162a;#fff;#fff;#12162a" keyTimes="0;.18;.2;.95;1" dur="9s" repeatCount="indefinite"/></text>
+      <text x="704" y="206">Host<animate attributeName="fill" values="#12162a;#12162a;#fff;#fff;#12162a" keyTimes="0;.3;.33;.95;1" dur="9s" repeatCount="indefinite"/></text>
+    </g>
+
+    <g font-size="17" text-anchor="middle" fill="#55607a">
+      <text x="400" y="257" opacity="0">A friend joins by Steam ID<animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;.03;.06;.3;.33;1" dur="9s" repeatCount="indefinite"/></text>
+      <text x="400" y="257" opacity="0">Connected through Valve's relay<animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;.33;.36;.47;.5;1" dur="9s" repeatCount="indefinite"/></text>
+      <text x="400" y="257" opacity="0">Game traffic over Steam Networking Sockets<animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;.5;.53;.92;.95;1" dur="9s" repeatCount="indefinite"/></text>
+    </g>
+  </g>
+</svg>
