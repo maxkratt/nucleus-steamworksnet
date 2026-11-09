@@ -22,8 +22,8 @@ namespace Nucleus.Integrations.SteamworksNet.Samples.LobbyBrowser
     /// The ping is estimated without sending anything to the host: Steam's relay network measures each peer's ping to its relays, the
     /// host publishes that as a ping location string in its lobby data, and <see cref="SteamNetworkingUtils.EstimatePingTimeFromLocalHost"/>
     /// combines it with this peer's own. Both sides need relay network access, which <see cref="SteamBootstrap"/> starts. A joined
-    /// player connects to the lobby owner through <see cref="SteamworksNetTransport.ServerSteamId"/>, and leaves the lobby once its
-    /// client stops.
+    /// player connects to the lobby's game server through <see cref="SteamworksNetTransport.ServerSteamId"/>, and leaves the lobby once
+    /// its client stops.
     /// </remarks>
     [DisallowMultipleComponent]
     [HelpURL("https://github.com/maxkratt/nucleus-steamworksnet/blob/main/Samples~/LobbyBrowser/README.md")]
@@ -42,7 +42,7 @@ namespace Nucleus.Integrations.SteamworksNet.Samples.LobbyBrowser
         [Tooltip("The scene's Unity Transport Manager.")]
         private UnityTransportManager _unityTransportManager;
         /// <summary>
-        /// The Steam transport, which a joining player points at the lobby owner.
+        /// The Steam transport, which a joining player points at the lobby's game server.
         /// </summary>
         [SerializeField]
         [Tooltip("The scene's Steam Sockets Transport, set to SteamID addressing.")]
@@ -88,6 +88,10 @@ namespace Nucleus.Integrations.SteamworksNet.Samples.LobbyBrowser
         /// </summary>
         private bool _hasConnected;
         /// <summary>
+        /// Whether this player has started its client since it last left, since entering a lobby and Steam's game server notice can both name the server.
+        /// </summary>
+        private bool _hasStartedClient;
+        /// <summary>
         /// Whether the hosted lobby still waits for this peer's ping location, which <see cref="OnRelayNetworkStatusChanged"/> publishes
         /// once the relay network has measured it.
         /// </summary>
@@ -120,6 +124,10 @@ namespace Nucleus.Integrations.SteamworksNet.Samples.LobbyBrowser
         /// The callback that reports this peer entering a lobby, held so it is not collected.
         /// </summary>
         private Callback<LobbyEnter_t> _lobbyEnteredCallback;
+        /// <summary>
+        /// The callback that reports the lobby's game server being set, held so it is not collected.
+        /// </summary>
+        private Callback<LobbyGameCreated_t> _lobbyGameCreatedCallback;
         /// <summary>
         /// The callback that reports the relay network's availability changing, held so it is not collected.
         /// </summary>
@@ -189,6 +197,7 @@ namespace Nucleus.Integrations.SteamworksNet.Samples.LobbyBrowser
             _lobbyMatchListCallResult = CallResult<LobbyMatchList_t>.Create(OnLobbyMatchListReceived);
             _lobbyCreatedCallback = Callback<LobbyCreated_t>.Create(OnLobbyCreated);
             _lobbyEnteredCallback = Callback<LobbyEnter_t>.Create(OnLobbyEntered);
+            _lobbyGameCreatedCallback = Callback<LobbyGameCreated_t>.Create(OnLobbyGameCreated);
             _relayNetworkStatusChangedCallback = Callback<SteamRelayNetworkStatus_t>.Create(OnRelayNetworkStatusChanged);
         }
 
@@ -286,7 +295,7 @@ namespace Nucleus.Integrations.SteamworksNet.Samples.LobbyBrowser
         }
 
         /// <summary>
-        /// Asks Steam to enter a lobby; the client starts once <see cref="OnLobbyEntered"/> names the lobby's owner.
+        /// Asks Steam to enter a lobby; the client starts once the lobby names its game server.
         /// </summary>
         /// <param name="lobbySteamId">The lobby to enter.</param>
         private void JoinLobby(CSteamID lobbySteamId)
@@ -298,11 +307,15 @@ namespace Nucleus.Integrations.SteamworksNet.Samples.LobbyBrowser
         }
 
         /// <summary>
-        /// Starts this peer as a client of the lobby owner.
+        /// Starts this peer as a client of the lobby's game server, unless it already started one.
         /// </summary>
-        /// <param name="serverSteamId">The lobby owner's SteamID.</param>
+        /// <param name="serverSteamId">The game server's SteamID.</param>
         private async void StartClient(ulong serverSteamId)
         {
+            if (_hasStartedClient)
+                return;
+
+            _hasStartedClient = true;
             _steamSocketsTransport.ServerSteamId = serverSteamId;
             _statusText = $"Connecting to the host [{serverSteamId}].";
 
@@ -321,6 +334,7 @@ namespace Nucleus.Integrations.SteamworksNet.Samples.LobbyBrowser
             // Cleared before the shutdown, whose client stop would otherwise call this again.
             _hasStarted = false;
             _hasConnected = false;
+            _hasStartedClient = false;
             _isLobbyOwner = false;
             _isPingLocationPending = false;
             _lobbySteamId = CSteamID.Nil;
@@ -386,7 +400,7 @@ namespace Nucleus.Integrations.SteamworksNet.Samples.LobbyBrowser
         }
 
         /// <summary>
-        /// Records the lobby this peer created and publishes its listing data, or reports why Steam refused it.
+        /// Records the lobby this peer created, publishes its listing data and names this peer its game server, or reports why Steam refused it.
         /// </summary>
         /// <param name="lobbyCreated">Steam's notice.</param>
         private void OnLobbyCreated(LobbyCreated_t lobbyCreated)
@@ -406,11 +420,14 @@ namespace Nucleus.Integrations.SteamworksNet.Samples.LobbyBrowser
             SteamMatchmaking.SetLobbyData(_lobbySteamId, NameKey, _lobbyNameText);
             TryPublishPingLocation();
 
+            // The server is already listening, so players may dial it from here on.
+            SteamMatchmaking.SetLobbyGameServer(_lobbySteamId, unGameServerIP: 0, unGameServerPort: 0, SteamUser.GetSteamID());
+
             _statusText = "Hosting. Players can find this lobby with Search.";
         }
 
         /// <summary>
-        /// Records the lobby this peer entered and starts the client toward its owner, unless this peer is that owner.
+        /// Records the lobby this peer entered and starts the client toward its game server, unless this peer owns the lobby.
         /// </summary>
         /// <param name="lobbyEnter">Steam's notice.</param>
         /// <remarks>Steam raises this for the creator of a lobby too, which is already serving.</remarks>
@@ -431,7 +448,33 @@ namespace Nucleus.Integrations.SteamworksNet.Samples.LobbyBrowser
             if (ownerSteamId == SteamUser.GetSteamID())
                 return;
 
-            StartClient(ownerSteamId.m_SteamID);
+            // A game server set before this peer entered raised no notice for it, so it is read here; otherwise OnLobbyGameCreated follows.
+            if (!SteamMatchmaking.GetLobbyGameServer(_lobbySteamId, out uint _, out ushort _, out CSteamID serverSteamId))
+            {
+                _statusText = "Waiting for the host's server.";
+
+                return;
+            }
+
+            // The host served this lobby, so a different owner means Steam handed the lobby on after the host left.
+            if (serverSteamId != ownerSteamId)
+            {
+                Leave("The host of that lobby has left.");
+
+                return;
+            }
+
+            StartClient(serverSteamId.m_SteamID);
+        }
+
+        /// <summary>
+        /// Starts this player's client when the lobby it is waiting in names its game server.
+        /// </summary>
+        /// <param name="lobbyGameCreated">Steam's notice.</param>
+        private void OnLobbyGameCreated(LobbyGameCreated_t lobbyGameCreated)
+        {
+            if (!_isLobbyOwner && lobbyGameCreated.m_ulSteamIDLobby == _lobbySteamId.m_SteamID)
+                StartClient(lobbyGameCreated.m_ulSteamIDGameServer);
         }
 
         /// <summary>
@@ -481,6 +524,7 @@ namespace Nucleus.Integrations.SteamworksNet.Samples.LobbyBrowser
             _lobbyMatchListCallResult.Dispose();
             _lobbyCreatedCallback.Dispose();
             _lobbyEnteredCallback.Dispose();
+            _lobbyGameCreatedCallback.Dispose();
             _relayNetworkStatusChangedCallback.Dispose();
         }
 

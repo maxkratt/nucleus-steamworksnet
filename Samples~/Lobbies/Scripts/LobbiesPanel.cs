@@ -22,9 +22,10 @@ namespace Nucleus.Integrations.SteamworksNet.Samples.Lobbies
     /// </summary>
     /// <remarks>
     /// The lobby only finds the host; the session itself runs over <see cref="SteamworksNetTransport"/>, whose
-    /// <see cref="SteamworksNetTransport.ServerSteamId"/> a member sets to the lobby owner before starting its client. The host starts its
-    /// server before it creates the lobby, so no member can dial a server that is not yet listening. When the host leaves, Steam hands
-    /// the lobby to another member, but the server went with the host, so each member leaves the lobby once its client stops.
+    /// <see cref="SteamworksNetTransport.ServerSteamId"/> a member sets to the lobby's game server before starting its client. The host
+    /// starts its server, creates the lobby, then names itself the lobby's game server, so no member can dial a server that is not yet
+    /// listening. When the host leaves, Steam hands the lobby to another member, but the server went with the host, so each member leaves
+    /// the lobby once its client stops, and a player who enters later sees that the game server is no longer the owner.
     /// </remarks>
     [DisallowMultipleComponent]
     [HelpURL("https://github.com/maxkratt/nucleus-steamworksnet/blob/main/Samples~/Lobbies/README.md")]
@@ -43,7 +44,7 @@ namespace Nucleus.Integrations.SteamworksNet.Samples.Lobbies
         [Tooltip("The scene's Unity Transport Manager.")]
         private UnityTransportManager _unityTransportManager;
         /// <summary>
-        /// The Steam transport, which a member points at the lobby owner.
+        /// The Steam transport, which a member points at the lobby's game server.
         /// </summary>
         [SerializeField]
         [Tooltip("The scene's Steam Sockets Transport, set to SteamID addressing.")]
@@ -82,6 +83,10 @@ namespace Nucleus.Integrations.SteamworksNet.Samples.Lobbies
         /// Whether this peer's client has connected since it last joined, so a dropped session reads differently from a failed connect.
         /// </summary>
         private bool _hasConnected;
+        /// <summary>
+        /// Whether this member has started its client since it last left, since entering a lobby and Steam's game server notice can both name the server.
+        /// </summary>
+        private bool _hasStartedClient;
         /// <summary>
         /// The last thing that happened, shown on the panel.
         /// </summary>
@@ -146,6 +151,10 @@ namespace Nucleus.Integrations.SteamworksNet.Samples.Lobbies
         /// The callback that reports a change to the lobby's data, held so it is not collected.
         /// </summary>
         private Callback<LobbyDataUpdate_t> _lobbyDataUpdatedCallback;
+        /// <summary>
+        /// The callback that reports the lobby's game server being set, held so it is not collected.
+        /// </summary>
+        private Callback<LobbyGameCreated_t> _lobbyGameCreatedCallback;
         /// <summary>
         /// The callback that reports the user accepting an invite or joining a friend from Steam while the game runs, held so it is not
         /// collected.
@@ -227,6 +236,7 @@ namespace Nucleus.Integrations.SteamworksNet.Samples.Lobbies
             _lobbyEnteredCallback = Callback<LobbyEnter_t>.Create(OnLobbyEntered);
             _lobbyChatUpdatedCallback = Callback<LobbyChatUpdate_t>.Create(OnLobbyChatUpdated);
             _lobbyDataUpdatedCallback = Callback<LobbyDataUpdate_t>.Create(OnLobbyDataUpdated);
+            _lobbyGameCreatedCallback = Callback<LobbyGameCreated_t>.Create(OnLobbyGameCreated);
             _gameLobbyJoinRequestedCallback = Callback<GameLobbyJoinRequested_t>.Create(OnGameLobbyJoinRequested);
             _avatarImageLoadedCallback = Callback<AvatarImageLoaded_t>.Create(OnAvatarImageLoaded);
             _personaStateChangedCallback = Callback<PersonaStateChange_t>.Create(OnPersonaStateChanged);
@@ -368,7 +378,7 @@ namespace Nucleus.Integrations.SteamworksNet.Samples.Lobbies
         }
 
         /// <summary>
-        /// Asks Steam to enter a lobby; the client starts once <see cref="OnLobbyEntered"/> names the lobby's owner.
+        /// Asks Steam to enter a lobby; the client starts once the lobby names its game server.
         /// </summary>
         /// <param name="lobbySteamId">The lobby to enter.</param>
         private void JoinLobby(CSteamID lobbySteamId)
@@ -391,6 +401,7 @@ namespace Nucleus.Integrations.SteamworksNet.Samples.Lobbies
             // Cleared before the shutdown, whose client stop would otherwise call this again.
             _hasStarted = false;
             _hasConnected = false;
+            _hasStartedClient = false;
             _isLobbyOwner = false;
             _lobbySteamId = CSteamID.Nil;
             _lobbyMembers.Clear();
@@ -505,7 +516,7 @@ namespace Nucleus.Integrations.SteamworksNet.Samples.Lobbies
         }
 
         /// <summary>
-        /// Records the lobby this peer created and sets its first lobby data, or reports why Steam refused it.
+        /// Records the lobby this peer created, sets its first lobby data and names this peer its game server, or reports why Steam refused it.
         /// </summary>
         /// <param name="lobbyCreated">Steam's notice.</param>
         private void OnLobbyCreated(LobbyCreated_t lobbyCreated)
@@ -523,10 +534,13 @@ namespace Nucleus.Integrations.SteamworksNet.Samples.Lobbies
             _statusText = $"Hosting a {LobbyTypeNames[_lobbyTypeIndex].ToLowerInvariant()} lobby.";
 
             SetLobbyData();
+
+            // The server is already listening, so members may dial it from here on.
+            SteamMatchmaking.SetLobbyGameServer(_lobbySteamId, unGameServerIP: 0, unGameServerPort: 0, SteamUser.GetSteamID());
         }
 
         /// <summary>
-        /// Records the lobby this peer entered and starts the client toward its owner, unless this peer is that owner.
+        /// Records the lobby this peer entered and starts the client toward its game server, unless this peer owns the lobby.
         /// </summary>
         /// <param name="lobbyEnter">Steam's notice.</param>
         /// <remarks>Steam raises this for the creator of a lobby too, which is already serving.</remarks>
@@ -548,15 +562,45 @@ namespace Nucleus.Integrations.SteamworksNet.Samples.Lobbies
             if (ownerSteamId == SteamUser.GetSteamID())
                 return;
 
-            StartClient(ownerSteamId.m_SteamID);
+            // A game server set before this peer entered raised no notice for it, so it is read here; otherwise OnLobbyGameCreated follows.
+            if (!SteamMatchmaking.GetLobbyGameServer(_lobbySteamId, out uint _, out ushort _, out CSteamID serverSteamId))
+            {
+                _statusText = "Waiting for the host's server.";
+
+                return;
+            }
+
+            // The host served this lobby, so a different owner means Steam handed the lobby on after the host left.
+            if (serverSteamId != ownerSteamId)
+            {
+                Leave("The host of that lobby has left.");
+
+                return;
+            }
+
+            StartClient(serverSteamId.m_SteamID);
         }
 
         /// <summary>
-        /// Starts this peer as a client of the lobby owner.
+        /// Starts this member's client when the lobby it is waiting in names its game server.
         /// </summary>
-        /// <param name="serverSteamId">The lobby owner's SteamID.</param>
+        /// <param name="lobbyGameCreated">Steam's notice.</param>
+        private void OnLobbyGameCreated(LobbyGameCreated_t lobbyGameCreated)
+        {
+            if (!_isLobbyOwner && lobbyGameCreated.m_ulSteamIDLobby == _lobbySteamId.m_SteamID)
+                StartClient(lobbyGameCreated.m_ulSteamIDGameServer);
+        }
+
+        /// <summary>
+        /// Starts this peer as a client of the lobby's game server, unless it already started one.
+        /// </summary>
+        /// <param name="serverSteamId">The game server's SteamID.</param>
         private async void StartClient(ulong serverSteamId)
         {
+            if (_hasStartedClient)
+                return;
+
+            _hasStartedClient = true;
             _steamSocketsTransport.ServerSteamId = serverSteamId;
             _statusText = $"Connecting to the host [{serverSteamId}].";
 
@@ -660,6 +704,7 @@ namespace Nucleus.Integrations.SteamworksNet.Samples.Lobbies
             _lobbyEnteredCallback.Dispose();
             _lobbyChatUpdatedCallback.Dispose();
             _lobbyDataUpdatedCallback.Dispose();
+            _lobbyGameCreatedCallback.Dispose();
             _gameLobbyJoinRequestedCallback.Dispose();
             _avatarImageLoadedCallback.Dispose();
             _personaStateChangedCallback.Dispose();

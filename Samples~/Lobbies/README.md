@@ -1,6 +1,6 @@
 # Lobbies
 
-Finding the host through a Steam lobby: the host starts its server and creates a lobby, and a player who enters it connects to the lobby owner's SteamID. The lobby only finds the host; the session runs over the transport like any other.
+Finding the host through a Steam lobby: the host starts its server, creates a lobby and names itself the lobby's game server, and a player who enters it connects to that SteamID. The lobby only finds the host; the session runs over the transport like any other.
 
 ## What it shows
 
@@ -30,5 +30,5 @@ On App ID 480 (Spacewar) a public lobby is visible to every developer testing on
 ## What to look at
 
 - `LobbiesPanel.Host`: `StartHostAsync`, then `SteamMatchmaking.CreateLobby`, so nobody can dial a server that is not yet listening.
-- `LobbiesPanel.OnLobbyEntered`: `SteamworksNetTransport.ServerSteamId` set to the lobby owner, then `StartClientAsync`.
+- `LobbiesPanel.OnLobbyEntered`: `SteamworksNetTransport.ServerSteamId` set to the lobby's game server (`GetLobbyGameServer`, or `LobbyGameCreated_t` while waiting), then `StartClientAsync`.
 - `LobbiesPanel.OnConnectionLocalStateChanged`: a member leaves the lobby once its client stops.
