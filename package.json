@@ -1,7 +1,7 @@
 {
   "name": "com.maxkratt.nucleus.steamworksnet",
   "displayName": "Nucleus Steamworks.NET",
-  "version": "0.47.0",
+  "version": "0.48.0",
   "unity": "6000.5",
   "description": "Steam Networking Sockets transport for the Nucleus netcode engine, built on Steamworks.NET. Requires Nucleus 0.5.0 or later in Assets/Nucleus and Steamworks.NET (com.rlabrecque.steamworks.net) added by git URL.",
   "license": "MIT",

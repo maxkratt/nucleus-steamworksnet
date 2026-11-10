@@ -500,15 +500,16 @@ namespace Nucleus.Integrations.SteamworksNet.Editor
         }
 
         /// <summary>
-        /// Draws the collapsed Advanced section with Steam's timeouts, send rate and buffer, summarised while it is collapsed.
+        /// Draws the collapsed Advanced section with Steam's timeouts, send rates and buffer, summarised while it is collapsed.
         /// </summary>
         private void DrawAdvancedSection()
         {
             SerializedProperty connectingTimeoutSecondsSerializedProperty = serializedObject.FindProperty("_connectingTimeoutSeconds");
             SerializedProperty idleTimeoutSecondsSerializedProperty = serializedObject.FindProperty("_idleTimeoutSeconds");
+            SerializedProperty sendRateMinimumSerializedProperty = serializedObject.FindProperty("_sendRateMinimumBytesPerSecond");
             SerializedProperty sendRateMaximumSerializedProperty = serializedObject.FindProperty("_sendRateMaximumBytesPerSecond");
             SerializedProperty sendBufferSizeSerializedProperty = serializedObject.FindProperty("_sendBufferSizeBytes");
-            string advancedSummary = $"{FormatSeconds(connectingTimeoutSecondsSerializedProperty.intValue)} / {FormatSeconds(idleTimeoutSecondsSerializedProperty.intValue)} timeouts · {FormatBytes(sendRateMaximumSerializedProperty.uintValue, SteamDefaultSendRateBytes)}/s · {FormatBytes(sendBufferSizeSerializedProperty.uintValue, SteamDefaultSendBufferBytes)} buffer";
+            string advancedSummary = $"{FormatSeconds(connectingTimeoutSecondsSerializedProperty.intValue)} / {FormatSeconds(idleTimeoutSecondsSerializedProperty.intValue)} timeouts · {FormatBytes(sendRateMinimumSerializedProperty.uintValue, SteamDefaultSendRateBytes)} to {FormatBytes(sendRateMaximumSerializedProperty.uintValue, SteamDefaultSendRateBytes)}/s · {FormatBytes(sendBufferSizeSerializedProperty.uintValue, SteamDefaultSendBufferBytes)} buffer";
 
             EditorGUILayout.Space(GroupSpacing);
 
@@ -519,6 +520,7 @@ namespace Nucleus.Integrations.SteamworksNet.Editor
             {
                 DrawPropertyFieldWithUnit(connectingTimeoutSecondsSerializedProperty, "Connecting Timeout", "s");
                 DrawPropertyFieldWithUnit(idleTimeoutSecondsSerializedProperty, "Idle Timeout", "s");
+                DrawKibibyteField(sendRateMinimumSerializedProperty, "Minimum Send Rate", "KiB/s");
                 DrawKibibyteField(sendRateMaximumSerializedProperty, "Maximum Send Rate", "KiB/s");
                 DrawKibibyteField(sendBufferSizeSerializedProperty, "Send Buffer Size", "KiB");
             }

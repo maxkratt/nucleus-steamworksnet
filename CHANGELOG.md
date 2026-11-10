@@ -1,5 +1,8 @@
 # Changelog
 
+## Nucleus Steamworks.NET 0.48.0
+- Minimum Send Rate in the component's Advanced section, default 256 KiB/s. Steam ID links send at this rate rather than climbing towards the maximum, so raise it to send large reliable data faster over Steam IDs.
+
 ## Nucleus Steamworks.NET 0.47.0
 - `SteamworksNetTransport.ClientAdmissionFilter` refuses a SteamID before its ticket is checked, and can tell the client why.
 - With Ticket Authentication on, a client now sends its ticket only once Steam reports it ready.

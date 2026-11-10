@@ -74,6 +74,7 @@ Collapsed by default, with a summary of its values.
 |---|---|---|
 | Connecting Timeout | 10 s | How long a link may spend connecting before Steam gives up. Zero keeps Steam's 10 s. |
 | Idle Timeout | 15 s | How long a peer waits without hearing from the other side before the link drops. Steam keeps links alive on its own thread, so a game hitch does not trip it. Zero keeps Steam's 10 s. |
+| Minimum Send Rate | 256 KiB/s | The rate Steam never sends slower than on one connection. A Steam ID link stays at this rate in both directions rather than climbing towards the maximum, so raise it if you send large reliable data over Steam IDs: 3,000 reliable messages of 1 KiB took 12.3 s at 256 KiB/s and 0.8 s at 4 MiB/s on a direct link. An IP address link climbs on its own. Each connection gets the floor, so on a listen server with several clients keep it within the host's upload. Zero keeps Steam's 256 KiB/s. |
 | Maximum Send Rate | 4 MiB/s | The rate Steam never sends faster than on one connection. Zero keeps Steam's 256 KiB/s. |
 | Send Buffer Size | 2 MiB | How much Steam may hold queued per connection. Reliable messages past it wait in the transport. Reliable messages go out in pieces of up to 512 KiB, so keep it at 512 KiB or more. Zero keeps Steam's 512 KiB. |
 
@@ -85,7 +86,6 @@ These live on `SteamSockets`, which `AddToAsync` returns and `TransportManager` 
 - `SteamworksNetTransport.ClientAdmissionFilter`, a `bool (Connection connection, ulong steamId)` used while Ticket Authentication is on and run before the ticket is waited for. Unlike `ConnectingClientFilter` it can tell the client why, with `ServerManager.DenyClient(connection, notice)`. It sees the player's SteamID, not the game's owner under Family Sharing.
 - `ServerFakeAddress`, the address Steam grants a Fake IP server once it is ready.
 - `TryGetLinkStatus(connection, out SteamLinkStatus)`, Steam's ping, connection quality and pending bytes for one link.
-- `SendRateMinimumBytesPerSecond`, the send rate floor. It stays at Steam's 256 KiB/s; raising it made no difference in testing.
 - `SetNetworkConditions` simulates latency, loss and jitter through Steam's own settings, mid-session too. They are process wide, so they also affect any other Steam connection in the process, and the host's own client is never delayed: judge lag from a separate client.
 
 ### Launch arguments

@@ -96,7 +96,11 @@ namespace Nucleus.Integrations.SteamworksNet
         /// <summary>
         /// The send rate Steam never drops below on a connection, in bytes per second.
         /// </summary>
-        /// <remarks><see cref="UnsetSendSetting"/> keeps Steam's default of 256 KiB a second. Applied to connections opened after it is set.</remarks>
+        /// <remarks>
+        /// <see cref="UnsetSendSetting"/> keeps Steam's default of 256 KiB a second. A Steam ID link sends at this floor in both directions
+        /// rather than climbing towards <see cref="SendRateMaximumBytesPerSecond"/>, so it sets how fast large reliable data leaves there;
+        /// an address link climbs on its own. Applied to connections opened after it is set.
+        /// </remarks>
         public uint SendRateMinimumBytesPerSecond = UnsetSendSetting;
         /// <summary>
         /// The send rate Steam never rises above on a connection, in bytes per second.

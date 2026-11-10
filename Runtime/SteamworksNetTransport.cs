@@ -215,14 +215,25 @@ namespace Nucleus.Integrations.SteamworksNet
         [Tooltip("Carry Steam ID links over Valve's relay only, so no player learns another's IP address. Off lets Steam connect players directly when each player's Steam settings allow it, which can lower ping.")]
         private bool _relayOnlyEnabled = true;
         /// <summary>
+        /// The send rate Steam never drops below on a connection, in bytes per second.
+        /// </summary>
+        /// <remarks>
+        /// Carried to <see cref="SteamSockets.SendRateMinimumBytesPerSecond"/>. Defaults to Steam's 256 KiB a second, since a higher floor
+        /// per connection would oversubscribe a listen server's home upload when several clients join at once. A Steam ID link sends at
+        /// this floor in both directions rather than climbing towards the maximum, so a game that sends large reliable data over Steam IDs
+        /// raises it: 3,000 reliable messages of 1 KiB took 12.3 s at 256 KiB a second and 0.8 s at 4 MiB. An address link climbs on its
+        /// own. <see cref="SteamSockets.UnsetSendSetting"/> keeps Steam's default.
+        /// </remarks>
+        [SerializeField]
+        [Tooltip("Rate Steam never sends slower than on a connection. Steam ID links stay at it, so raise it when they send large reliable data. Zero keeps Steam's default, 256 KiB/s.")]
+        private uint _sendRateMinimumBytesPerSecond = 256 * 1024;
+        /// <summary>
         /// The send rate Steam never rises above on a connection, in bytes per second.
         /// </summary>
         /// <remarks>
         /// Carried to <see cref="SteamSockets.SendRateMaximumBytesPerSecond"/>. Defaults to 4 MiB a second rather than Steam's 256 KiB,
         /// so a late join or a large burst can use a good link while Steam's estimate still backs off on a poor one; at 1 MiB a second
-        /// a large late join sat at the ceiling. The minimum is left at Steam's 256 KiB: raising it made no difference to a 3.2 MiB late
-        /// join, and a higher floor per connection would oversubscribe a listen server's home upload when several clients join at once.
-        /// <see cref="SteamSockets.UnsetSendSetting"/> keeps Steam's default.
+        /// a large late join sat at the ceiling. <see cref="SteamSockets.UnsetSendSetting"/> keeps Steam's default.
         /// </remarks>
         [SerializeField]
         [Tooltip("Rate Steam never sends faster than on a connection. Zero keeps Steam's default, 256 KiB/s.")]
@@ -285,6 +296,7 @@ namespace Nucleus.Integrations.SteamworksNet
             _steamSockets.MaximumClientPacketBytes = _maximumClientPacketBytes;
             _steamSockets.RelayOnlyEnabled = _relayOnlyEnabled;
             _steamSockets.ShareSteamIdsEnabled = _shareSteamIdsEnabled;
+            _steamSockets.SendRateMinimumBytesPerSecond = _sendRateMinimumBytesPerSecond;
             _steamSockets.SendRateMaximumBytesPerSecond = _sendRateMaximumBytesPerSecond;
             _steamSockets.SendBufferSizeBytes = _sendBufferSizeBytes;
 
