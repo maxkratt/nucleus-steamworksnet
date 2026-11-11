@@ -22,7 +22,7 @@ namespace Nucleus.Integrations.SteamworksNet.Samples.QuickStart
     /// <see cref="SteamworksNetAddressing.SteamId"/>.
     /// </remarks>
     [DisallowMultipleComponent]
-    [HelpURL("https://github.com/maxkratt/nucleus-steamworksnet/blob/main/Samples~/QuickStart/README.md")]
+    [HelpURL("https://github.com/maxkratt/nucleus-steamworksnet/blob/master/Samples~/QuickStart/README.md")]
     public class QuickStartPanel : MonoBehaviour
     {
         /// <summary>

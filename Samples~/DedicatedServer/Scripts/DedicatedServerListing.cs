@@ -19,7 +19,7 @@ namespace Nucleus.Integrations.SteamworksNet.Samples.DedicatedServer
     /// entry, so a client needs no second query to learn it.
     /// </remarks>
     [DisallowMultipleComponent]
-    [HelpURL("https://github.com/maxkratt/nucleus-steamworksnet/blob/main/Samples~/DedicatedServer/README.md")]
+    [HelpURL("https://github.com/maxkratt/nucleus-steamworksnet/blob/master/Samples~/DedicatedServer/README.md")]
     public class DedicatedServerListing : MonoBehaviour
     {
         /// <summary>

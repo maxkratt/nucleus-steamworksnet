@@ -21,7 +21,7 @@ namespace Nucleus.Integrations.SteamworksNet.Samples.QuickMatch
     /// create a lobby, so a lone owner keeps searching and moves into any waiting lobby with a lower SteamID, which only one side can do.
     /// </remarks>
     [DisallowMultipleComponent]
-    [HelpURL("https://github.com/maxkratt/nucleus-steamworksnet/blob/main/Samples~/QuickMatch/README.md")]
+    [HelpURL("https://github.com/maxkratt/nucleus-steamworksnet/blob/master/Samples~/QuickMatch/README.md")]
     public class QuickMatchPanel : MonoBehaviour
     {
         /// <summary>

@@ -27,7 +27,7 @@ namespace Nucleus.Integrations.SteamworksNet.Samples.VoiceChat
     /// the other observers; a host's own call is sent as the server. Sent unreliable: a lost chunk is a short gap, while a resent one
     /// would arrive too late to play. It adopts the system the <see cref="Components.NetworkTransform"/> declares.
     /// </remarks>
-    [HelpURL("https://github.com/maxkratt/nucleus-steamworksnet/blob/main/Samples~/VoiceChat/README.md")]
+    [HelpURL("https://github.com/maxkratt/nucleus-steamworksnet/blob/master/Samples~/VoiceChat/README.md")]
     public class VoiceChatPlayer : NucleusBehaviour
     {
         /// <summary>

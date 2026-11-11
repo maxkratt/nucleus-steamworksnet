@@ -26,7 +26,7 @@ namespace Nucleus.Integrations.SteamworksNet.Samples.LobbyBrowser
     /// its client stops.
     /// </remarks>
     [DisallowMultipleComponent]
-    [HelpURL("https://github.com/maxkratt/nucleus-steamworksnet/blob/main/Samples~/LobbyBrowser/README.md")]
+    [HelpURL("https://github.com/maxkratt/nucleus-steamworksnet/blob/master/Samples~/LobbyBrowser/README.md")]
     public class LobbyBrowserPanel : MonoBehaviour
     {
         /// <summary>

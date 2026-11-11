@@ -27,7 +27,7 @@ namespace Nucleus.Integrations.SteamworksNet.Samples.BanList
     /// which runs before the client's ticket is waited for.
     /// </remarks>
     [DisallowMultipleComponent]
-    [HelpURL("https://github.com/maxkratt/nucleus-steamworksnet/blob/main/Samples~/BanList/README.md")]
+    [HelpURL("https://github.com/maxkratt/nucleus-steamworksnet/blob/master/Samples~/BanList/README.md")]
     public class BanListPanel : MonoBehaviour
     {
         /// <summary>

@@ -24,7 +24,7 @@ namespace Nucleus.Integrations.SteamworksNet.Samples
     /// </remarks>
     [DefaultExecutionOrder(-1000)]
     [DisallowMultipleComponent]
-    [HelpURL("https://github.com/maxkratt/nucleus-steamworksnet/blob/main/Samples~/Shared/README.md")]
+    [HelpURL("https://github.com/maxkratt/nucleus-steamworksnet/blob/master/Samples~/Shared/README.md")]
     public class SteamBootstrap : MonoBehaviour
     {
         /// <summary>

@@ -25,7 +25,7 @@ namespace Nucleus.Integrations.SteamworksNet.Samples.DedicatedServer
     /// and starts the client, which Steam's relay carries to the server.
     /// </remarks>
     [DisallowMultipleComponent]
-    [HelpURL("https://github.com/maxkratt/nucleus-steamworksnet/blob/main/Samples~/DedicatedServer/README.md")]
+    [HelpURL("https://github.com/maxkratt/nucleus-steamworksnet/blob/master/Samples~/DedicatedServer/README.md")]
     public class ServerBrowserPanel : MonoBehaviour
     {
         /// <summary>

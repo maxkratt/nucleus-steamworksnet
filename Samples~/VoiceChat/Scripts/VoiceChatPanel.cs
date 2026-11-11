@@ -22,7 +22,7 @@ namespace Nucleus.Integrations.SteamworksNet.Samples.VoiceChat
     /// <see cref="SteamworksNetAddressing.SteamId"/>.
     /// </remarks>
     [DisallowMultipleComponent]
-    [HelpURL("https://github.com/maxkratt/nucleus-steamworksnet/blob/main/Samples~/VoiceChat/README.md")]
+    [HelpURL("https://github.com/maxkratt/nucleus-steamworksnet/blob/master/Samples~/VoiceChat/README.md")]
     public class VoiceChatPanel : MonoBehaviour
     {
         /// <summary>

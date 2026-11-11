@@ -5,9 +5,9 @@
   "unity": "6000.5",
   "description": "Steam Networking Sockets transport for the Nucleus netcode engine, built on Steamworks.NET. Requires Nucleus 0.5.0 or later in Assets/Nucleus and Steamworks.NET (com.rlabrecque.steamworks.net) added by git URL.",
   "license": "MIT",
-  "licensesUrl": "https://github.com/maxkratt/nucleus-steamworksnet/blob/main/LICENSE.md",
+  "licensesUrl": "https://github.com/maxkratt/nucleus-steamworksnet/blob/master/LICENSE.md",
   "documentationUrl": "https://github.com/maxkratt/nucleus-steamworksnet#readme",
-  "changelogUrl": "https://github.com/maxkratt/nucleus-steamworksnet/blob/main/CHANGELOG.md",
+  "changelogUrl": "https://github.com/maxkratt/nucleus-steamworksnet/blob/master/CHANGELOG.md",
   "keywords": [
     "nucleus",
     "steam",

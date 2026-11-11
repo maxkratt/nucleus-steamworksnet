@@ -24,7 +24,7 @@ namespace Nucleus.Integrations.SteamworksNet.Samples.QuickMatch
     /// lobby whose owner is no longer that host has lost its server, so a member that sees this returns to the menu.
     /// </remarks>
     [DisallowMultipleComponent]
-    [HelpURL("https://github.com/maxkratt/nucleus-steamworksnet/blob/main/Samples~/QuickMatch/README.md")]
+    [HelpURL("https://github.com/maxkratt/nucleus-steamworksnet/blob/master/Samples~/QuickMatch/README.md")]
     public class QuickMatchGame : MonoBehaviour
     {
         /// <summary>

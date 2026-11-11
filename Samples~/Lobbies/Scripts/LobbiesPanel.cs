@@ -28,7 +28,7 @@ namespace Nucleus.Integrations.SteamworksNet.Samples.Lobbies
     /// the lobby once its client stops, and a player who enters later sees that the game server is no longer the owner.
     /// </remarks>
     [DisallowMultipleComponent]
-    [HelpURL("https://github.com/maxkratt/nucleus-steamworksnet/blob/main/Samples~/Lobbies/README.md")]
+    [HelpURL("https://github.com/maxkratt/nucleus-steamworksnet/blob/master/Samples~/Lobbies/README.md")]
     public class LobbiesPanel : MonoBehaviour
     {
         /// <summary>
