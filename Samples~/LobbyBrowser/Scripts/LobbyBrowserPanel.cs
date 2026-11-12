@@ -97,6 +97,20 @@ namespace Nucleus.Integrations.SteamworksNet.Samples.LobbyBrowser
         /// </summary>
         private bool _isPingLocationPending;
         /// <summary>
+        /// How many times this peer has hosted or left, so a host whose server finishes starting after a later Leave or Host knows it was
+        /// overtaken.
+        /// </summary>
+        private uint _sessionCount;
+        /// <summary>
+        /// The lobbies this peer asked Steam to create that Steam has not answered yet.
+        /// </summary>
+        private uint _pendingLobbyRequestCount;
+        /// <summary>
+        /// How many of <see cref="_pendingLobbyRequestCount"/> were asked for before this peer last left, whose lobbies are left as soon as
+        /// Steam creates them.
+        /// </summary>
+        private uint _staleLobbyRequestCount;
+        /// <summary>
         /// The last thing that happened, shown on the panel.
         /// </summary>
         private string _statusText = "Search for lobbies, or host one.";
@@ -271,12 +285,18 @@ namespace Nucleus.Integrations.SteamworksNet.Samples.LobbyBrowser
         /// <remarks>The server is up before the lobby exists, so no player can dial a server that is not listening.</remarks>
         private async void Host()
         {
+            uint sessionCount = ++_sessionCount;
             _hasStarted = true;
             _statusText = "Starting the server.";
 
             await _unityTransportManager.StartHostAsync();
 
+            // Left, or hosted again, while the server was starting, so this session has ended.
+            if (sessionCount != _sessionCount)
+                return;
+
             _statusText = "Creating the lobby.";
+            _pendingLobbyRequestCount++;
             SteamMatchmaking.CreateLobby(ELobbyType.k_ELobbyTypePublic, _maximumLobbyMembers);
         }
 
@@ -330,6 +350,10 @@ namespace Nucleus.Integrations.SteamworksNet.Samples.LobbyBrowser
         {
             if (_lobbySteamId != CSteamID.Nil)
                 SteamMatchmaking.LeaveLobby(_lobbySteamId);
+
+            // A lobby Steam is still creating has no ID to leave yet, so it is left when OnLobbyCreated reports it.
+            _staleLobbyRequestCount = _pendingLobbyRequestCount;
+            _sessionCount++;
 
             // Cleared before the shutdown, whose client stop would otherwise call this again.
             _hasStarted = false;
@@ -403,8 +427,23 @@ namespace Nucleus.Integrations.SteamworksNet.Samples.LobbyBrowser
         /// Records the lobby this peer created, publishes its listing data and names this peer its game server, or reports why Steam refused it.
         /// </summary>
         /// <param name="lobbyCreated">Steam's notice.</param>
+        /// <remarks>
+        /// Steam answers each request once, so a lobby asked for before this peer last left is left here rather than taken over.
+        /// </remarks>
         private void OnLobbyCreated(LobbyCreated_t lobbyCreated)
         {
+            _pendingLobbyRequestCount--;
+
+            if (_staleLobbyRequestCount > 0)
+            {
+                _staleLobbyRequestCount--;
+
+                if (lobbyCreated.m_eResult is EResult.k_EResultOK)
+                    SteamMatchmaking.LeaveLobby(new(lobbyCreated.m_ulSteamIDLobby));
+
+                return;
+            }
+
             if (lobbyCreated.m_eResult is not EResult.k_EResultOK)
             {
                 _statusText = $"Steam refused the lobby: [{lobbyCreated.m_eResult}]. The server is still up.";
@@ -441,12 +480,14 @@ namespace Nucleus.Integrations.SteamworksNet.Samples.LobbyBrowser
                 return;
             }
 
-            _lobbySteamId = new(lobbyEnter.m_ulSteamIDLobby);
+            CSteamID enteredLobbySteamId = new(lobbyEnter.m_ulSteamIDLobby);
+            CSteamID ownerSteamId = SteamMatchmaking.GetLobbyOwner(enteredLobbySteamId);
 
-            CSteamID ownerSteamId = SteamMatchmaking.GetLobbyOwner(_lobbySteamId);
-
+            // OnLobbyCreated records a lobby this peer created, so one asked for before this peer last left is not taken over here.
             if (ownerSteamId == SteamUser.GetSteamID())
                 return;
+
+            _lobbySteamId = enteredLobbySteamId;
 
             // A game server set before this peer entered raised no notice for it, so it is read here; otherwise OnLobbyGameCreated follows.
             if (!SteamMatchmaking.GetLobbyGameServer(_lobbySteamId, out uint _, out ushort _, out CSteamID serverSteamId))

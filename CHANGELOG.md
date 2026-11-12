@@ -1,5 +1,8 @@
 # Changelog
 
+## Nucleus Steamworks.NET 0.48.1
+- Lobbies and Lobby Browser samples: clicking Host, then Leave, then Host again before Steam had created the first lobby no longer takes over that lobby and stays in it. A lobby Steam creates after Leave is now left, and Leave while the server is still starting no longer creates a lobby.
+
 ## Nucleus Steamworks.NET 0.48.0
 - Minimum Send Rate in the component's Advanced section, default 256 KiB/s. Steam ID links send at this rate rather than climbing towards the maximum, so raise it to send large reliable data faster over Steam IDs.
 
