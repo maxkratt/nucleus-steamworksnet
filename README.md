@@ -1,4 +1,4 @@
-![Nucleus Steamworks.NET: A Steam Networking Sockets transport for Nucleus](Documentation~/banner.svg)
+![Nucleus Steamworks.NET: SteamID relay, Fake IP game servers, IPv4 / IPv6](Documentation~/banner.svg)
 
 # Nucleus Steamworks.NET
 
@@ -140,6 +140,8 @@ The Quick Start and Voice Chat samples spawn networked prefabs: after importing 
 ## Tests
 
 The PlayMode tests (`Nucleus.Integrations.SteamworksNet.Tests`) run in the Test Runner when the package is listed under `testables` in `Packages/manifest.json`. They skip unless Steam is running.
+
+<img src="https://raw.githubusercontent.com/AnkleBreaker-Studio/unity-mcp-plugin/main/icon.png" width="32" align="absmiddle" alt=""> Testing Powered by [AnkleBreaker MCP](https://github.com/AnkleBreaker-Studio/unity-mcp-plugin).
 
 ## Licence
 
