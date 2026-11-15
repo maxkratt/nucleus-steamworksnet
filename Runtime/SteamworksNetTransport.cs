@@ -282,6 +282,10 @@ namespace Nucleus.Integrations.SteamworksNet
         /// <inheritdoc/>
         public override async Task<Transport> AddToAsync(CoreManager coreManager)
         {
+            // The transport manager removes the transport on shutdown and adds it again on the next start, so the last start's authenticator goes first.
+            _steamTicketAuthenticator?.Deinitialize();
+            _steamTicketAuthenticator = null;
+
             _steamSockets = (SteamSockets)await coreManager.TransportManager.AddTransportAsync<SteamSockets>();
 
             _steamSockets.Addressing = _addressing;

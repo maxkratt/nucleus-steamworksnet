@@ -1,5 +1,8 @@
 # Changelog
 
+## Nucleus Steamworks.NET 0.48.2
+- With Ticket Authentication on, a client that leaves and joins again is no longer dropped by the server. Stopping and starting the transport used to leave the previous ticket authenticator registered beside the new one.
+
 ## Nucleus Steamworks.NET 0.48.1
 - Lobbies and Lobby Browser samples: clicking Host, then Leave, then Host again before Steam had created the first lobby no longer takes over that lobby and stays in it. A lobby Steam creates after Leave is now left, and Leave while the server is still starting no longer creates a lobby.
 
