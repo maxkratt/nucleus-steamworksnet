@@ -3,7 +3,8 @@
 ## Nucleus Steamworks.NET 0.48.3
 - Shared sample: `PlayerNameTag` now shows a joining client's name. The server wrote the tag before the transport had recorded that client's SteamID, so the tag stayed empty; it now also follows `SteamSockets.SteamIdChanged`.
 - Shared sample: new `PlayerMover`, used by the Quick Start and Voice Chat players. It moves the player freely instead of within a radius, lets it fall off the ground, and puts it back above the origin once it falls below a set height. It compiles only with the Input System package.
-- Voice Chat sample: the player can now move, and its `NetworkTransform` uses Interval with extrapolation off, which keeps motion steady while voice is sent.
+- Voice Chat sample: the player can now move.
+- Quick Start and Voice Chat samples: the player's `NetworkTransform` uses Interval with extrapolation off, so other players' capsules move steadily instead of overshooting and correcting.
 
 ## Nucleus Steamworks.NET 0.48.2
 - With Ticket Authentication on, a client that leaves and joins again is no longer dropped by the server. Stopping and starting the transport used to leave the previous ticket authenticator registered beside the new one.

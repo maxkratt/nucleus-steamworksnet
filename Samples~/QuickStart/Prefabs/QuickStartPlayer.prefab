@@ -112,8 +112,8 @@ MonoBehaviour:
   _interpolateScaleEnabled: 1
   _kinematicManagementEnabled: 1
   _sendInterval: 0
-  _transmissionMode: 1
-  _extrapolationEnabled: 1
+  _transmissionMode: 0
+  _extrapolationEnabled: 0
 --- !u!114 &12334861448221133
 MonoBehaviour:
   m_ObjectHideFlags: 0
