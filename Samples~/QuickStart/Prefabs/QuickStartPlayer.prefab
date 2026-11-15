@@ -15,6 +15,7 @@ GameObject:
   - component: {fileID: 12334861448221133}
   - component: {fileID: 737039936808333512}
   - component: {fileID: 8993015776705088704}
+  - component: {fileID: 385082118702560576}
   m_Layer: 0
   m_Name: QuickStartPlayer
   m_TagString: Untagged
@@ -148,8 +149,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 38241ac8311fdcd4484ddce442b42d95, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Nucleus.Integrations.SteamworksNet.Samples.QuickStart::Nucleus.Integrations.SteamworksNet.Samples.QuickStart.QuickStartPlayer
-  _moveSpeed: 6
-  _wanderRadius: 12
   _bodyRenderer: {fileID: 7271355026741975966}
 --- !u!114 &8993015776705088704
 MonoBehaviour:
@@ -168,3 +167,19 @@ MonoBehaviour:
   _heightOffset: 1.4
   _speakingIcon: {fileID: 0}
   _speakingIconSize: 28
+--- !u!114 &385082118702560576
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7029841285262910435}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d30577e399249b745b78b24dc317bbf8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Nucleus.Integrations.SteamworksNet.Samples::Nucleus.Integrations.SteamworksNet.Samples.PlayerMover
+  _moveSpeed: 6
+  _groundOffset: 1
+  _respawnHeight: -20
+  _respawnPosition: {x: 0, y: 3, z: 0}

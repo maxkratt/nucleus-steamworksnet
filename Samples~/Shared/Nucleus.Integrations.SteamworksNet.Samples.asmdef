@@ -4,6 +4,7 @@
     "references": [
         "Nucleus.Integrations.SteamworksNet",
         "Nucleus.Integrations.Unity",
+        "Unity.InputSystem",
         "com.rlabrecque.steamworks.net"
     ],
     "includePlatforms": [
@@ -24,6 +25,11 @@
             "name": "com.rlabrecque.steamworks.net",
             "expression": "",
             "define": "NUCLEUS_STEAMWORKS"
+        },
+        {
+            "name": "com.unity.inputsystem",
+            "expression": "",
+            "define": "NUCLEUS_SAMPLES_INPUT_SYSTEM"
         }
     ],
     "noEngineReferences": false

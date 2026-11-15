@@ -67,6 +67,10 @@ namespace Nucleus.Integrations.SteamworksNet.Samples
         /// </summary>
         private Callback<PersonaStateChange_t> _personaStateChangeCallback;
         /// <summary>
+        /// The transport whose <see cref="SteamSockets.SteamIdChanged"/> the server follows for the controller, or null while it follows none.
+        /// </summary>
+        private SteamSockets _followedSteamSockets;
+        /// <summary>
         /// The name drawn on the tag, empty while there is none to show.
         /// </summary>
         private string _displayName = string.Empty;
@@ -108,6 +112,7 @@ namespace Nucleus.Integrations.SteamworksNet.Samples
             base.OnDestroy();
 
             _personaStateChangeCallback?.Dispose();
+            StopFollowingSteamIds();
         }
 
         /// <summary>
@@ -125,6 +130,7 @@ namespace Nucleus.Integrations.SteamworksNet.Samples
         protected override void OnSystemUnlinked()
         {
             Component.MembersChanged -= OnNameTagMembersChanged;
+            StopFollowingSteamIds();
             SetDisplayName(string.Empty);
             IsSpeaking = false;
         }
@@ -134,16 +140,29 @@ namespace Nucleus.Integrations.SteamworksNet.Samples
         /// </summary>
         /// <param name="previousControllerConnection">The previous controlling Connection, or null.</param>
         /// <param name="currentControllerConnection">The current controlling Connection, or null.</param>
-        /// <remarks>The server knows every client's SteamID, the host's own included, so this works whether or not the transport shares them with clients.</remarks>
+        /// <remarks>
+        /// The server knows every client's SteamID, the host's own included, so this works whether or not the transport shares them with
+        /// clients. A player spawner that assigns control when the client authenticates can run before the transport records that
+        /// client's SteamID, so the server also follows <see cref="SteamSockets.SteamIdChanged"/> while a Steam client controls the object.
+        /// </remarks>
         protected override void OnControllerChanged(Connection previousControllerConnection, Connection currentControllerConnection)
         {
             if (!IsStarted(Invoker.Server))
                 return;
 
-            if (currentControllerConnection?.Transport is SteamSockets steamSockets && steamSockets.TryGetSteamId(currentControllerConnection, out ulong steamId))
-                Component.SteamId.Value = steamId;
-            else
+            StopFollowingSteamIds();
+
+            if (currentControllerConnection?.Transport is not SteamSockets steamSockets)
+            {
                 Component.SteamId.Value = SteamSockets.UnsetSteamId;
+
+                return;
+            }
+
+            _followedSteamSockets = steamSockets;
+            steamSockets.SteamIdChanged += OnSteamIdChanged;
+
+            Component.SteamId.Value = steamSockets.TryGetSteamId(currentControllerConnection, out ulong steamId) ? steamId : SteamSockets.UnsetSteamId;
         }
 
         /// <summary>
@@ -161,6 +180,29 @@ namespace Nucleus.Integrations.SteamworksNet.Samples
         {
             if (Component is not null && personaStateChange.m_ulSteamID == Component.SteamId.Value)
                 RefreshDisplayName();
+        }
+
+        /// <summary>
+        /// Writes the controller's SteamID on the server once the transport records it.
+        /// </summary>
+        /// <param name="connectionId">The <see cref="Connection.Id"/> of the client.</param>
+        /// <param name="steamId">The client's SteamID64, or <see cref="SteamSockets.UnsetSteamId"/> when the client has left.</param>
+        private void OnSteamIdChanged(uint connectionId, ulong steamId)
+        {
+            if (connectionId == NetworkSystem.ControllerConnectionId)
+                Component.SteamId.Value = steamId;
+        }
+
+        /// <summary>
+        /// Stops following the transport's SteamIDs, if the server was following them.
+        /// </summary>
+        private void StopFollowingSteamIds()
+        {
+            if (_followedSteamSockets is null)
+                return;
+
+            _followedSteamSockets.SteamIdChanged -= OnSteamIdChanged;
+            _followedSteamSockets = null;
         }
 
         /// <summary>
