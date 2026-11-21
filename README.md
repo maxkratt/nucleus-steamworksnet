@@ -2,6 +2,9 @@
 
 A Steam Networking Sockets transport for the Nucleus netcode engine, built on [Steamworks.NET](https://github.com/rlabrecque/Steamworks.NET). Players host and join each other by SteamID through Valve's relay, dedicated servers run as Steam game servers behind a fake IP, and two processes can also dial each other by IP address.
 
+> [!IMPORTANT]
+> Consider using the [official Nucleus Steamworks.NET](https://github.com/FirstGearGames/Nucleus-Steamworks) transport instead, as it has been updated to included the features from here and more.
+
 ## Requirements
 
 - Unity 6.5 (6000.5) or later.
